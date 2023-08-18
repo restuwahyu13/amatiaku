@@ -8,21 +8,6 @@ import (
 	"github.com/restuwahyu13/amatiaku/helpers"
 )
 
-func main() {
-	amatiaku := NewAmatiAku(&AmatiakuConfig{
-		IntervalCounterConfig: IntervalCounterConfig{
-			IntervalEveryRequest: 5,
-			IntervalNextRequest:  300,
-			IntervalUnitType:     SECONDS,
-			MaxCounterRequest:    10,
-		},
-	})
-
-	amatiaku.ByIntervalCounter(func() {
-		fmt.Println("EXECUTION BY INTERVAL")
-	})
-}
-
 func NewAmatiAku(config *AmatiakuConfig) AmatiakuHandler {
 	return &amatiaku{IntervalConfig: config.IntervalConfig, IntervalCounterConfig: config.IntervalCounterConfig}
 }
