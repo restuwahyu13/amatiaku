@@ -17,15 +17,21 @@ type (
 		ByIntervalCounter(HandleFunc func())
 	}
 
+	NextRequest struct {
+		Delay int
+		Type  string
+	}
+
 	IntervalConfig struct {
-		IntervalEveryRequest int
-		IntervalNextRequest  int
-		IntervalUnitType     string
+		IntervalEveryRequest  int
+		IntervalTargetRequest int
+		IntervalNextRequest   NextRequest
+		IntervalUnitType      string
 	}
 
 	IntervalCounterConfig struct {
 		IntervalEveryRequest int
-		IntervalNextRequest  int
+		IntervalNextRequest  NextRequest
 		IntervalUnitType     string
 		MaxCounterRequest    int
 	}
@@ -44,6 +50,7 @@ type (
 		Counter            int
 		StopCounter        int
 		TotalCounter       int
+		Interval           int
 		IntervalTarget     int
 		IntervalUnitType   string
 		Ticker             *time.Ticker

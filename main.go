@@ -8,6 +8,24 @@ import (
 	"github.com/restuwahyu13/amatiaku/helpers"
 )
 
+func main() {
+	amatiaku := NewAmatiAku(&AmatiakuConfig{
+		IntervalCounterConfig: IntervalCounterConfig{
+			IntervalEveryRequest: 5,
+			IntervalUnitType:     SECONDS,
+			IntervalNextRequest: NextRequest{
+				Delay: 1,
+				Type:  MINUTES,
+			},
+			MaxCounterRequest: 30,
+		},
+	})
+
+	amatiaku.ByIntervalCounter(func() {
+		fmt.Println("Hello world")
+	})
+}
+
 func NewAmatiAku(config *AmatiakuConfig) AmatiakuHandler {
 	return &amatiaku{IntervalConfig: config.IntervalConfig, IntervalCounterConfig: config.IntervalCounterConfig}
 }
@@ -23,13 +41,27 @@ func (h *amatiaku) ByIntervalCounter(HandleFunc func()) {
 
 	req.Ticker = time.NewTicker(time.Second * 1)
 	req.Release = make(chan bool, 1)
+
 	req.IntervalTarget = h.IntervalCounterConfig.IntervalEveryRequest
 	req.IntervalUnitType = h.IntervalCounterConfig.IntervalUnitType
+
 	req.NowTriggerRequest = req.IntervalTarget
 	req.NextTriggerRequest = (req.NowTriggerRequest + req.IntervalTarget)
-	req.StopTriggerRequest = h.IntervalCounterConfig.IntervalNextRequest
-	req.StopCounter = h.IntervalCounterConfig.MaxCounterRequest
 
+	switch h.IntervalCounterConfig.IntervalNextRequest.Type {
+	case SECONDS:
+	case MINUTES:
+	case DAYS:
+	case WEEKS:
+	case MONTHS:
+		return
+
+	default:
+		panic("Unit converter not supported")
+	}
+
+	req.StopCounter = h.IntervalCounterConfig.MaxCounterRequest
+	req.StopTriggerRequest = helpers.ConvertToSeconds(h.IntervalCounterConfig.IntervalNextRequest.Delay, h.IntervalCounterConfig.IntervalNextRequest.Type)
 	helpers.StartScreenTime(req.StopTriggerRequest)
 
 	for range req.Ticker.C {
@@ -169,12 +201,27 @@ func (h *amatiaku) ByInterval(HandleFunc func()) {
 
 	req.Ticker = time.NewTicker(time.Second * 1)
 	req.Release = make(chan bool, 1)
-	req.IntervalTarget = h.IntervalConfig.IntervalEveryRequest
-	req.IntervalUnitType = h.IntervalConfig.IntervalUnitType
-	req.NowTriggerRequest = req.IntervalTarget
-	req.NextTriggerRequest = (req.NowTriggerRequest + req.IntervalTarget)
-	req.StopTriggerRequest = h.IntervalConfig.IntervalNextRequest
 
+	req.Interval = h.IntervalConfig.IntervalEveryRequest
+	req.IntervalTarget = h.IntervalConfig.IntervalTargetRequest
+	req.IntervalUnitType = h.IntervalConfig.IntervalUnitType
+
+	req.NowTriggerRequest = req.Interval
+	req.NextTriggerRequest = (req.NowTriggerRequest + req.Interval)
+
+	switch h.IntervalConfig.IntervalNextRequest.Type {
+	case SECONDS:
+	case MINUTES:
+	case DAYS:
+	case WEEKS:
+	case MONTHS:
+		return
+
+	default:
+		panic("Unit converter not supported")
+	}
+
+	req.StopTriggerRequest = helpers.ConvertToSeconds(h.IntervalConfig.IntervalNextRequest.Delay, h.IntervalConfig.IntervalNextRequest.Type)
 	helpers.StartScreenTime(req.StopTriggerRequest)
 
 	for range req.Ticker.C {
@@ -184,7 +231,7 @@ func (h *amatiaku) ByInterval(HandleFunc func()) {
 		switch req.IntervalUnitType {
 
 		case SECONDS:
-			req.IntervalTarget = (helpers.ConvertToSeconds(req.IntervalTarget, req.IntervalUnitType))
+			req.Interval = (helpers.ConvertToSeconds(req.Interval, req.IntervalUnitType))
 
 			if req.Counter == req.NowTriggerRequest {
 				fmt.Printf("\n")
@@ -204,7 +251,7 @@ func (h *amatiaku) ByInterval(HandleFunc func()) {
 			}
 
 		case MINUTES:
-			req.IntervalTarget = helpers.ConvertToSeconds(req.IntervalTarget, req.IntervalUnitType)
+			req.Interval = helpers.ConvertToSeconds(req.Interval, req.IntervalUnitType)
 
 			if req.Counter == req.NowTriggerRequest {
 				fmt.Printf("\n")
@@ -224,7 +271,7 @@ func (h *amatiaku) ByInterval(HandleFunc func()) {
 			}
 
 		case HOURS:
-			req.IntervalTarget = helpers.ConvertToSeconds(req.IntervalTarget, req.IntervalUnitType)
+			req.Interval = helpers.ConvertToSeconds(req.Interval, req.IntervalUnitType)
 
 			if req.Counter == req.NowTriggerRequest {
 				fmt.Printf("\n")
@@ -244,7 +291,7 @@ func (h *amatiaku) ByInterval(HandleFunc func()) {
 			}
 
 		case DAYS:
-			req.IntervalTarget = helpers.ConvertToSeconds(req.IntervalTarget, req.IntervalUnitType)
+			req.Interval = helpers.ConvertToSeconds(req.Interval, req.IntervalUnitType)
 
 			if req.Counter == req.NowTriggerRequest {
 				fmt.Printf("\n")
@@ -264,7 +311,7 @@ func (h *amatiaku) ByInterval(HandleFunc func()) {
 			}
 
 		case WEEKS:
-			req.IntervalTarget = helpers.ConvertToSeconds(req.IntervalTarget, req.IntervalUnitType)
+			req.Interval = helpers.ConvertToSeconds(req.Interval, req.IntervalUnitType)
 
 			if req.Counter == req.NowTriggerRequest {
 				fmt.Printf("\n")
@@ -284,7 +331,7 @@ func (h *amatiaku) ByInterval(HandleFunc func()) {
 			}
 
 		case MONTHS:
-			req.IntervalTarget = helpers.ConvertToSeconds(req.IntervalTarget, req.IntervalUnitType)
+			req.Interval = helpers.ConvertToSeconds(req.Interval, req.IntervalUnitType)
 
 			if req.Counter == req.NowTriggerRequest {
 				fmt.Printf("\n")
@@ -307,21 +354,21 @@ func (h *amatiaku) ByInterval(HandleFunc func()) {
 			panic("Unit converter not supported")
 		}
 
-		if req.Counter == req.IntervalTarget {
+		if req.Counter == req.Interval {
 			req.NextTriggerRequest = 0
-			req.NowTriggerRequest += req.IntervalTarget
-			req.NextTriggerRequest += (req.NowTriggerRequest + req.IntervalTarget)
+			req.NowTriggerRequest += req.Interval
+			req.NextTriggerRequest += (req.NowTriggerRequest + req.Interval)
 
 		} else if req.Counter == req.NowTriggerRequest {
-			req.NowTriggerRequest += req.IntervalTarget
-			req.NextTriggerRequest += req.IntervalTarget
+			req.NowTriggerRequest += req.Interval
+			req.NextTriggerRequest += req.Interval
 
 		}
 
-		if req.StopTriggerRequest != 0 && int64(req.Counter) >= int64(req.StopTriggerRequest) {
+		if req.IntervalTarget != 0 && req.StopTriggerRequest != 0 && int64(req.Counter) >= int64(req.IntervalTarget) {
 			req.Counter = 0
-			req.NowTriggerRequest = req.IntervalTarget
-			req.NextTriggerRequest = (req.NowTriggerRequest + req.IntervalTarget)
+			req.NowTriggerRequest = req.Interval
+			req.NextTriggerRequest = (req.NowTriggerRequest + req.Interval)
 
 			time.AfterFunc(time.Duration(time.Second*time.Duration(req.StopTriggerRequest)), func() {
 				req.Release <- true

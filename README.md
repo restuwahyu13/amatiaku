@@ -8,14 +8,39 @@
 func main() {
 	amatiaku := NewAmatiAku(&AmatiakuConfig{
 		IntervalConfig: IntervalConfig{
-			IntervalEveryRequest: 5,
-			IntervalNextRequest:  300,
-			IntervalUnitType:     SECONDS,
+			IntervalEveryRequest:  5, // Execution process every 5 seconds.
+			IntervalTargetRequest: 60, // Stop the process if the time has reached 1 minute, counting from the time the function is executed.
+			IntervalNextRequest: NextRequest{ // The next execution process starts again after 1 minute.
+				Delay: 1,
+				Type:  MINUTES,
+			},
+			IntervalUnitType: SECONDS,
 		},
 	})
 
 	amatiaku.ByInterval(func() {
-		// Do something here ....
+			// Do something here ....
+	})
+}
+```
+
+
+```go
+func main() {
+	amatiaku := NewAmatiAku(&AmatiakuConfig{
+		IntervalCounterConfig: IntervalCounterConfig{
+			IntervalEveryRequest: 5, // Execution process every 5 seconds.
+			IntervalUnitType:     SECONDS,
+			IntervalNextRequest: NextRequest{ // The next execution process starts again after 1 minute.
+				Delay: 1,
+				Type:  MINUTES,
+			},
+			MaxCounterRequest: 30, // Stop the process if the counter equal 30x request.
+		},
+	})
+
+	amatiaku.ByIntervalCounter(func() {
+			// Do something here ....
 	})
 }
 ```
